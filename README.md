@@ -64,8 +64,8 @@ It does not configure UFW, SSH, port 22, Headscale, VPNs, Docker, application se
 The same repository location is used on both platforms: `~/Developer/dev`. When published as a release, install a pinned tag with curl:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.0/install-mac.sh | bash -s -- --ref v1.0.0
-curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.0/install-ubuntu.sh | bash -s -- --ref v1.0.0
+curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.1/install-mac.sh | bash -s -- --ref v1.0.1
+curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.1/install-ubuntu.sh | bash -s -- --ref v1.0.1
 ```
 
-Replace `v1.0.0` with the release tag. The curl bootstrap refuses to overwrite an existing `~/Developer/dev` folder.
+Replace `v1.0.1` with the release tag. The curl bootstrap refuses to overwrite an existing `~/Developer/dev` folder.
