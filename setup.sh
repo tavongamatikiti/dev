@@ -151,16 +151,38 @@ install_go_tools() {
   fi
 }
 
+load_nvm() {
+  local nounset_enabled=0
+  case "$-" in
+    *u*) nounset_enabled=1; set +u ;;
+  esac
+  export NVM_DIR="$HOME/.nvm"
+  # shellcheck disable=SC1091
+  . "$NVM_DIR/nvm.sh"
+  if [[ "$nounset_enabled" == '1' ]]; then
+    set -u
+  fi
+}
+
+run_nvm() {
+  local nounset_enabled=0 nvm_status
+  case "$-" in
+    *u*) nounset_enabled=1; set +u ;;
+  esac
+  nvm "$@"
+  nvm_status=$?
+  if [[ "$nounset_enabled" == '1' ]]; then
+    set -u
+  fi
+  return "$nvm_status"
+}
+
 install_languages() {
   if [[ ! -d "$HOME/.nvm" ]]; then
     if [[ "$DRY_RUN" == "1" ]]; then
       printf '[dry-run] install NVM and the Node.js LTS release\n'
     else
       curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | PROFILE=/dev/null bash
-      export NVM_DIR="$HOME/.nvm"
-      # shellcheck disable=SC1091
-      . "$NVM_DIR/nvm.sh"
-      nvm install --lts
     fi
   else
     printf 'nvm already installed.\n'
@@ -169,11 +191,9 @@ install_languages() {
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] activate Node.js LTS and install pnpm\n'
   else
-    export NVM_DIR="$HOME/.nvm"
-    # shellcheck disable=SC1091
-    . "$NVM_DIR/nvm.sh"
-    nvm install --lts
-    nvm use --lts
+    load_nvm
+    run_nvm install --lts
+    run_nvm use --lts
     if command_exists pnpm; then
       printf 'pnpm already installed.\n'
     else
@@ -302,8 +322,7 @@ verify_setup() {
     return
   fi
 
-  export NVM_DIR="$HOME/.nvm"
-  [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+  [[ -s "$HOME/.nvm/nvm.sh" ]] && load_nvm
   export SDKMAN_DIR="$HOME/.sdkman"
   [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
   XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"

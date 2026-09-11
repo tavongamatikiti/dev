@@ -244,9 +244,29 @@ install_zig() {
 }
 
 load_nvm() {
+  local nounset_enabled=0
+  case "$-" in
+    *u*) nounset_enabled=1; set +u ;;
+  esac
   export NVM_DIR="$HOME/.nvm"
   # shellcheck disable=SC1091
   source "$NVM_DIR/nvm.sh"
+  if [[ "$nounset_enabled" == '1' ]]; then
+    set -u
+  fi
+}
+
+run_nvm() {
+  local nounset_enabled=0 nvm_status
+  case "$-" in
+    *u*) nounset_enabled=1; set +u ;;
+  esac
+  nvm "$@"
+  nvm_status=$?
+  if [[ "$nounset_enabled" == '1' ]]; then
+    set -u
+  fi
+  return "$nvm_status"
 }
 
 install_languages() {
@@ -256,8 +276,6 @@ install_languages() {
       printf '[dry-run] install Node.js LTS and enable Corepack\n'
     else
       curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | PROFILE=/dev/null bash
-      load_nvm
-      nvm install --lts
     fi
   else
     printf 'NVM already installed.\n'
@@ -266,8 +284,8 @@ install_languages() {
     printf '[dry-run] activate Node.js LTS, install pnpm and the tldr-pages client, refresh tldr pages, and install Bun\n'
   else
     load_nvm
-    nvm install --lts
-    nvm use --lts
+    run_nvm install --lts
+    run_nvm use --lts
     if command_exists pnpm; then
       printf 'pnpm already installed.\n'
     else
@@ -402,8 +420,7 @@ verify_setup() {
   export GOPATH="${GOPATH:-$XDG_CONFIG_HOME/go}"
   export BUN_INSTALL="$HOME/.bun"
   export PATH="$HOME/.local/opt/go1.26.1/bin:$HOME/.local/opt/zig-0.15.2:$HOME/.local/bin:$GOPATH/bin:$BUN_INSTALL/bin:$PATH"
-  export NVM_DIR="$HOME/.nvm"
-  [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+  [[ -s "$HOME/.nvm/nvm.sh" ]] && load_nvm
   export SDKMAN_DIR="$HOME/.sdkman"
   [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
   for command in git tmux rg fzf nvim node bun pnpm java javac mvn gradle spring go gopls zig psql podman; do

@@ -59,6 +59,33 @@ languages_dry_run=$(PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" \
   "$PROJECT_DIR/ubuntu/setup.sh" --dry-run --only languages)
 [[ "$languages_dry_run" == *'install pnpm and the tldr-pages client, refresh tldr pages, and install Bun'* ]] || fail 'Ubuntu setup should plan pnpm, tldr, and Bun installation'
 
+mkdir -p "$TEST_HOME/.nvm" "$TEST_HOME/.bun/bin" "$TEST_HOME/.local/opt/go1.26.1/bin" "$TEST_HOME/.local/opt/zig-0.15.2"
+cat > "$TEST_HOME/.nvm/nvm.sh" <<'EOF'
+if [[ "$-" == *u* ]]; then
+  printf 'nvm was sourced with nounset enabled\n' >&2
+  return 91
+fi
+nvm() {
+  [[ "$-" != *u* ]] || { printf 'nvm was called with nounset enabled\n' >&2; return 92; }
+}
+EOF
+for command in npm tldr; do
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$TEST_BIN/$command"
+  chmod +x "$TEST_BIN/$command"
+done
+for command in go zig bun; do
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$TEST_HOME/.local/opt/go1.26.1/bin/$command"
+  chmod +x "$TEST_HOME/.local/opt/go1.26.1/bin/$command"
+done
+cp "$TEST_HOME/.local/opt/go1.26.1/bin/bun" "$TEST_HOME/.bun/bin/bun"
+cp "$TEST_HOME/.local/opt/go1.26.1/bin/zig" "$TEST_HOME/.local/opt/zig-0.15.2/zig"
+
+if ! PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" \
+  DEV_SETUP_OS_RELEASE_FILE="$SUPPORTED_RELEASE" DEV_SETUP_SUBUID_FILE="$SUBUID_FILE" DEV_SETUP_SUBGID_FILE="$SUBGID_FILE" \
+  "$PROJECT_DIR/ubuntu/setup.sh" --only languages >/dev/null 2>&1; then
+  fail 'Ubuntu setup must source and run NVM with nounset disabled'
+fi
+
 if rg -q '—' "$PROJECT_DIR/README.md"; then
   fail 'README must not contain em dashes'
 fi
