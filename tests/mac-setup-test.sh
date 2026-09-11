@@ -39,6 +39,7 @@ assert_file "$TEST_HOME/.local/bin/organize-screenshots"
 assert_file "$TEST_HOME/.config/aerospace/aerospace.toml"
 assert_file "$TEST_HOME/.config/ghostty/config"
 assert_file "$TEST_HOME/.config/karabiner/karabiner.json"
+assert_contains "$TEST_HOME/.config/ghostty/config" 'font-family = JetBrainsMono Nerd Font'
 assert_file "$TEST_HOME/Library/LaunchAgents/com.user.screenshots.organize.plist"
 assert_contains "$TEST_HOME/Library/LaunchAgents/com.user.screenshots.organize.plist" "    <string>$TEST_HOME/.local/bin/organize-screenshots</string>"
 assert_file "$TEST_HOME/.config/unrelated/settings.conf"
