@@ -1,0 +1,4 @@
+background = 11111b
+background-opacity = 0.85
+background-blur-radius = 20
+minimum-contrast = 1.3

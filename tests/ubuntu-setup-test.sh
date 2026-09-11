@@ -54,6 +54,11 @@ entrypoint_dry_run=$(PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" \
   "$PROJECT_DIR/install-ubuntu.sh" --dry-run --only podman)
 [[ "$entrypoint_dry_run" == *'loginctl enable-linger'* ]] || fail 'local Ubuntu entrypoint should delegate to setup'
 
+languages_dry_run=$(PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" \
+  DEV_SETUP_OS_RELEASE_FILE="$SUPPORTED_RELEASE" DEV_SETUP_SUBUID_FILE="$SUBUID_FILE" DEV_SETUP_SUBGID_FILE="$SUBGID_FILE" \
+  "$PROJECT_DIR/ubuntu/setup.sh" --dry-run --only languages)
+[[ "$languages_dry_run" == *'install pnpm, and install Bun'* ]] || fail 'Ubuntu setup should plan pnpm and Bun installation'
+
 if rg -q '—' "$PROJECT_DIR/README.md"; then
   fail 'README must not contain em dashes'
 fi

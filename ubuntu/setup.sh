@@ -116,7 +116,7 @@ require_sudo() {
 install_apt_packages() {
   local packages=(
     build-essential ca-certificates curl gnupg git zsh tmux neovim ripgrep fzf tree jq wget
-    ninja-build cmake pipx shellcheck fd-find ffmpeg poppler-utils python3 python3-pip python3-venv
+    ninja-build cmake pipx shellcheck fd-find ffmpeg poppler-utils postgresql-client python3 python3-pip python3-venv
     maven gradle podman uidmap slirp4netns fuse-overlayfs zsh-autosuggestions zsh-syntax-highlighting
   )
   run sudo apt-get update
@@ -258,18 +258,33 @@ install_languages() {
       curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | PROFILE=/dev/null bash
       load_nvm
       nvm install --lts
-      nvm use --lts
-      corepack enable
     fi
   else
     printf 'NVM already installed.\n'
+  fi
+  if [[ "$DRY_RUN" == "1" ]]; then
+    printf '[dry-run] activate Node.js LTS, install pnpm, and install Bun\n'
+  else
+    load_nvm
+    nvm install --lts
+    nvm use --lts
+    if command_exists pnpm; then
+      printf 'pnpm already installed.\n'
+    else
+      npm install --global pnpm
+    fi
+    if [[ -x "$HOME/.bun/bin/bun" ]]; then
+      printf 'Bun already installed.\n'
+    else
+      curl -fsSL https://bun.sh/install | bash
+    fi
   fi
   install_go
   install_zig
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] install gopls using Go\n'
-  elif [[ ! -x "$HOME/go/bin/gopls" ]]; then
-    "$HOME/.local/opt/go1.26.1/bin/go" install golang.org/x/tools/gopls@latest
+  elif [[ ! -x "${XDG_CONFIG_HOME:-$HOME/.config}/go/bin/gopls" ]]; then
+    GOPATH="${GOPATH:-${XDG_CONFIG_HOME:-$HOME/.config}/go}" "$HOME/.local/opt/go1.26.1/bin/go" install golang.org/x/tools/gopls@latest
   else
     printf 'gopls already installed.\n'
   fi
@@ -381,12 +396,15 @@ verify_setup() {
     printf '[dry-run] verify Ubuntu developer commands, Java 25, and rootless Podman\n'
     return
   fi
-  export PATH="$HOME/.local/opt/go1.26.1/bin:$HOME/.local/opt/zig-0.15.2:$HOME/.local/bin:$HOME/go/bin:$PATH"
+  XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+  export GOPATH="${GOPATH:-$XDG_CONFIG_HOME/go}"
+  export BUN_INSTALL="$HOME/.bun"
+  export PATH="$HOME/.local/opt/go1.26.1/bin:$HOME/.local/opt/zig-0.15.2:$HOME/.local/bin:$GOPATH/bin:$BUN_INSTALL/bin:$PATH"
   export NVM_DIR="$HOME/.nvm"
   [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
   export SDKMAN_DIR="$HOME/.sdkman"
   [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
-  for command in git tmux rg fzf nvim node java javac mvn gradle spring go gopls zig podman; do
+  for command in git tmux rg fzf nvim node bun pnpm java javac mvn gradle spring go gopls zig psql podman; do
     if command_exists "$command"; then
       printf 'verified command: %s\n' "$command"
     else

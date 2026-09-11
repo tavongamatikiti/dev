@@ -31,6 +31,11 @@ HOME="$TEST_HOME" XDG_CONFIG_HOME="$TEST_HOME/.config" \
 assert_file "$TEST_HOME/.config/nvim/init.lua"
 assert_file "$TEST_HOME/.config/tmux/tmux.conf"
 assert_file "$TEST_HOME/.local/bin/tmux-sessionizer"
+assert_file "$TEST_HOME/.local/bin/tmux-persist"
+assert_file "$TEST_HOME/.local/bin/organize-screenshots"
+assert_file "$TEST_HOME/.config/aerospace/aerospace.toml"
+assert_file "$TEST_HOME/.config/ghostty/config"
+assert_file "$TEST_HOME/.config/karabiner/karabiner.json"
 assert_file "$TEST_HOME/.config/unrelated/settings.conf"
 assert_contains "$TEST_HOME/.config/unrelated/settings.conf" 'keep me'
 

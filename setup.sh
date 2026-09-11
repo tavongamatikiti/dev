@@ -114,7 +114,7 @@ install_core() {
     git tmux ripgrep fzf tree tldr neovim watchman ngrok jq wget gh zig zls go gradle maven
     ninja pipx yq shellcheck zsh-completions zsh-autosuggestions zsh-syntax-highlighting
     bear cmake cocoapods coreutils ddgr fd ffmpeg gitleaks mole poppler python-tk@3.14
-    tree-sitter tree-sitter-cli
+    tree-sitter tree-sitter-cli bun
   )
   local package
   for package in "${packages[@]}"; do
@@ -124,11 +124,13 @@ install_core() {
 
 install_go_tools() {
   local gopls_path
+  export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+  export GOPATH="${GOPATH:-$XDG_CONFIG_HOME/go}"
   if [[ "$DRY_RUN" == "1" ]]; then
     run go install golang.org/x/tools/gopls@latest
     return
   fi
-  gopls_path="$(go env GOPATH)/bin/gopls"
+  gopls_path="$GOPATH/bin/gopls"
   if [[ -x "$gopls_path" ]]; then
     printf 'gopls already installed.\n'
   else
@@ -146,11 +148,24 @@ install_languages() {
       # shellcheck disable=SC1091
       . "$NVM_DIR/nvm.sh"
       nvm install --lts
-      nvm use --lts
-      corepack enable
     fi
   else
     printf 'nvm already installed.\n'
+  fi
+
+  if [[ "$DRY_RUN" == "1" ]]; then
+    printf '[dry-run] activate Node.js LTS and install pnpm\n'
+  else
+    export NVM_DIR="$HOME/.nvm"
+    # shellcheck disable=SC1091
+    . "$NVM_DIR/nvm.sh"
+    nvm install --lts
+    nvm use --lts
+    if command_exists pnpm; then
+      printf 'pnpm already installed.\n'
+    else
+      npm install --global pnpm
+    fi
   fi
 
   brew_install openjdk@25
@@ -168,18 +183,20 @@ install_languages() {
 }
 
 install_postgres() {
-  brew_install postgresql@17
+  brew_install postgresql@18
   if [[ "$DRY_RUN" == "1" ]]; then
-    printf '[dry-run] brew services start postgresql@17\n'
-  elif ! brew services list | awk '$1 == "postgresql@17" && $2 == "started" { found = 1 } END { exit !found }'; then
-    brew services start postgresql@17
+    printf '[dry-run] brew services start postgresql@18 when PostgreSQL 17 is not already running\n'
+  elif brew services list | awk '$1 == "postgresql@17" && $2 == "started" { found = 1 } END { exit !found }'; then
+    printf 'PostgreSQL 17 is already running. PostgreSQL 18 was installed but was not started; migrate data explicitly before switching services.\n'
+  elif ! brew services list | awk '$1 == "postgresql@18" && $2 == "started" { found = 1 } END { exit !found }'; then
+    brew services start postgresql@18
   else
-    printf 'postgresql@17 already running.\n'
+    printf 'postgresql@18 already running.\n'
   fi
 }
 
 install_apps() {
-  local apps=(arc postman whatsapp spotify zoom notion jetbrains-toolbox blip raycast)
+  local apps=(arc postman whatsapp spotify zoom jetbrains-toolbox blip aerospace dash ghostty karabiner-elements obsidian raycast font-jetbrains-mono-nerd-font)
   local app
   for app in "${apps[@]}"; do
     brew_install_cask "$app"
@@ -276,15 +293,20 @@ verify_setup() {
   [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
   export SDKMAN_DIR="$HOME/.sdkman"
   [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
-  export GOPATH="${GOPATH:-$HOME/go}"
-  export PATH="$GOPATH/bin:$PATH"
-  local required_commands=(git tmux rg fzf nvim node java javac mvn gradle spring go gopls zig zls ninja pipx yq shellcheck)
   XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+  export GOPATH="${GOPATH:-$XDG_CONFIG_HOME/go}"
+  export PATH="$(brew --prefix postgresql@18)/bin:$GOPATH/bin:$PATH"
+  local required_commands=(git tmux rg fzf nvim node bun pnpm java javac mvn gradle spring go gopls zig zls ninja pipx yq shellcheck psql)
   local required_paths=(
     "$XDG_CONFIG_HOME/nvim/init.lua"
     "$XDG_CONFIG_HOME/tmux/tmux.conf"
     "$XDG_CONFIG_HOME/tmux-sessionizer/tmux-sessionizer.sh"
     "$HOME/.local/bin/tmux-sessionizer"
+    "$HOME/.local/bin/tmux-persist"
+    "$HOME/.local/bin/organize-screenshots"
+    "$XDG_CONFIG_HOME/aerospace/aerospace.toml"
+    "$XDG_CONFIG_HOME/ghostty/config"
+    "$XDG_CONFIG_HOME/karabiner/karabiner.json"
     "$XDG_CONFIG_HOME/dev-setup/shell.zsh"
   )
   local command path missing=0

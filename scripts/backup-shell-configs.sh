@@ -26,7 +26,6 @@ done
 
 shell_files=(.zshenv .zprofile .zshrc .zlogin)
 tmux_paths=(
-  .tmux-sessions
   .tmux/resurrect
   .tmux/plugins/tmux-resurrect
   .tmux/plugins/tmux-continuum
@@ -35,7 +34,7 @@ tmux_paths=(
   .local/share/tmux
   .local/state/tmux
 )
-tmux_files=(.tmux.conf .config/tmux/tmux.conf .config/tmux/tmux.conf.local)
+tmux_files=(.tmux.conf .config/tmux/tmux.conf .config/tmux/tmux.conf.local .local/bin/tmux-persist)
 
 if [[ "$DRY_RUN" == "1" ]]; then
   printf '[dry-run] create a private timestamped directory below %s\n' "$BACKUP_ROOT"

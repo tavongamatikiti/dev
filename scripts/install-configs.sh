@@ -12,7 +12,7 @@ usage() {
   cat <<'EOF'
 Usage: scripts/install-configs.sh [--dry-run]
 
-Installs repository-managed Neovim, tmux, and tmux-sessionizer files.
+Installs repository-managed Mac application and terminal configuration files.
 Existing unrelated files are never removed.
 EOF
 }
@@ -56,7 +56,12 @@ install_directory() {
 install_directory "$SOURCE_CONFIG_DIR/nvim" "$XDG_CONFIG_HOME/nvim"
 install_directory "$SOURCE_CONFIG_DIR/tmux" "$XDG_CONFIG_HOME/tmux"
 install_directory "$SOURCE_CONFIG_DIR/tmux-sessionizer" "$XDG_CONFIG_HOME/tmux-sessionizer"
+install_directory "$SOURCE_CONFIG_DIR/aerospace" "$XDG_CONFIG_HOME/aerospace"
+install_directory "$SOURCE_CONFIG_DIR/ghostty" "$XDG_CONFIG_HOME/ghostty"
+install_directory "$SOURCE_CONFIG_DIR/karabiner" "$XDG_CONFIG_HOME/karabiner"
 run mkdir -p "$HOME/.local/bin"
 run install -m 755 "$SOURCE_CONFIG_DIR/tmux-sessionizer/tmux-sessionizer.sh" "$HOME/.local/bin/tmux-sessionizer"
+run install -m 755 "$SOURCE_CONFIG_DIR/dev-setup/tmux-persist" "$HOME/.local/bin/tmux-persist"
+run install -m 755 "$SOURCE_CONFIG_DIR/dev-setup/organize-screenshots.sh" "$HOME/.local/bin/organize-screenshots"
 
 printf 'Configuration installation complete.\n'

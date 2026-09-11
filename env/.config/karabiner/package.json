@@ -1,0 +1,21 @@
+{
+	"name": "karabiner",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"build": "tsx rules.ts",
+		"format": "pnpm exec biome check --write .",
+		"watch": "nodemon -e ts --exec 'pnpm build'"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "MIT",
+	"packageManager": "pnpm@10.29.3",
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.12",
+		"@types/node": "^25.6.0",
+		"nodemon": "^3.1.14",
+		"tsx": "^4.21.0"
+	}
+}

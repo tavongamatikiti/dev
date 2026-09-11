@@ -31,7 +31,7 @@ PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" XDG_CONFIG_HOME="$TEST_HOME/.config" \
 
 shell_value=$(PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" TEST_HOME="$TEST_HOME" XDG_CONFIG_HOME="$TEST_HOME/.config" \
   /bin/zsh -df -c 'export HOME="$TEST_HOME"; unset GOPATH; source "$HOME/.zshrc"; print -r -- "$JAVA_HOME|$GOPATH"')
-[[ "$shell_value" == '/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home|'"$TEST_HOME"'/go' ]] || fail 'managed shell environment did not set Java 25 and GOPATH'
+[[ "$shell_value" == '/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home|'"$TEST_HOME"'/.config/go' ]] || fail 'managed shell environment did not set Java 25 and GOPATH'
 grep -Fqx 'export PERSONAL_SETTING=keep' "$TEST_HOME/.zshrc" >/dev/null || fail 'installer removed user shell configuration'
 [[ "$(grep -Fc '# >>> dev-setup managed shell >>>' "$TEST_HOME/.zshrc")" == '1' ]] || fail 'installer added duplicate source blocks'
 
