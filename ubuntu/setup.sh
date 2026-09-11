@@ -125,7 +125,7 @@ install_apt_packages() {
 
 install_optional_apt_packages() {
   local package
-  local packages=(gh gitleaks tldr bear ddgr)
+  local packages=(gh gitleaks bear ddgr)
   for package in "${packages[@]}"; do
     if [[ "$DRY_RUN" == "1" ]]; then
       printf '[dry-run] install optional Ubuntu package when available: %s\n' "$package"
@@ -263,7 +263,7 @@ install_languages() {
     printf 'NVM already installed.\n'
   fi
   if [[ "$DRY_RUN" == "1" ]]; then
-    printf '[dry-run] activate Node.js LTS, install pnpm, and install Bun\n'
+    printf '[dry-run] activate Node.js LTS, install pnpm and the tldr-pages client, refresh tldr pages, and install Bun\n'
   else
     load_nvm
     nvm install --lts
@@ -273,6 +273,8 @@ install_languages() {
     else
       npm install --global pnpm
     fi
+    npm install --global tldr@latest
+    tldr --update
     if [[ -x "$HOME/.bun/bin/bun" ]]; then
       printf 'Bun already installed.\n'
     else
