@@ -179,7 +179,7 @@ install_postgres() {
 }
 
 install_apps() {
-  local apps=(arc postman whatsapp spotify zoom notion jetbrains-toolbox blip)
+  local apps=(arc postman whatsapp spotify zoom notion jetbrains-toolbox blip raycast)
   local app
   for app in "${apps[@]}"; do
     brew_install_cask "$app"
