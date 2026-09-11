@@ -4,6 +4,7 @@ set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEST_HOME="$(mktemp -d)"
+TEST_BIN="$TEST_HOME/bin"
 trap 'rm -rf "$TEST_HOME"' EXIT
 
 fail() {
@@ -21,11 +22,13 @@ assert_contains() {
 
 # A config deployment must leave unrelated user configuration untouched,
 # while installing the repository-managed config files in the XDG location.
-mkdir -p "$TEST_HOME/.config/nvim" "$TEST_HOME/.config/unrelated"
+mkdir -p "$TEST_BIN" "$TEST_HOME/.config/nvim" "$TEST_HOME/.config/unrelated"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$TEST_BIN/launchctl"
+chmod +x "$TEST_BIN/launchctl"
 printf 'keep me\n' > "$TEST_HOME/.config/unrelated/settings.conf"
 printf 'old config\n' > "$TEST_HOME/.config/nvim/init.lua"
 
-HOME="$TEST_HOME" XDG_CONFIG_HOME="$TEST_HOME/.config" \
+PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" XDG_CONFIG_HOME="$TEST_HOME/.config" \
   "$PROJECT_DIR/scripts/install-configs.sh"
 
 assert_file "$TEST_HOME/.config/nvim/init.lua"
@@ -36,6 +39,8 @@ assert_file "$TEST_HOME/.local/bin/organize-screenshots"
 assert_file "$TEST_HOME/.config/aerospace/aerospace.toml"
 assert_file "$TEST_HOME/.config/ghostty/config"
 assert_file "$TEST_HOME/.config/karabiner/karabiner.json"
+assert_file "$TEST_HOME/Library/LaunchAgents/com.user.screenshots.organize.plist"
+assert_contains "$TEST_HOME/Library/LaunchAgents/com.user.screenshots.organize.plist" "    <string>$TEST_HOME/.local/bin/organize-screenshots</string>"
 assert_file "$TEST_HOME/.config/unrelated/settings.conf"
 assert_contains "$TEST_HOME/.config/unrelated/settings.conf" 'keep me'
 

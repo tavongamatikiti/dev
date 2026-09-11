@@ -64,6 +64,8 @@ bootstrap_output=$(TEST_BREW_MISSING=1 PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" 
 [[ "$bootstrap_output" == *'brew install gitleaks'* ]] || fail 'fresh-Mac setup should install explicitly requested Gitleaks'
 [[ "$bootstrap_output" == *'brew install cocoapods'* ]] || fail 'fresh-Mac setup should install CocoaPods through Homebrew'
 [[ "$bootstrap_output" == *'brew install bun'* ]] || fail 'fresh-Mac setup should install Bun'
+[[ "$bootstrap_output" == *'brew install --cask ngrok'* ]] || fail 'fresh-Mac setup should install ngrok as a cask'
+[[ "$bootstrap_output" == *'brew install felixkratz/formulae/borders'* ]] || fail 'fresh-Mac setup should install AeroSpace borders'
 [[ "$bootstrap_output" == *'activate Node.js LTS and install pnpm'* ]] || fail 'fresh-Mac setup should activate pnpm'
 [[ "$bootstrap_output" == *'brew install postgresql@18'* ]] || fail 'fresh-Mac setup should install PostgreSQL 18'
 [[ "$bootstrap_output" == *'go install golang.org/x/tools/gopls@latest'* ]] || fail 'fresh-Mac setup should install gopls'

@@ -40,14 +40,14 @@ Available components are `backup`, `xcode`, `homebrew`, `core`, `languages`, `po
 
 ## What It Configures
 
-- CLI tools: Git, tmux, ripgrep, fzf, tree, tldr, Neovim, Watchman, ngrok, jq, wget, GitHub CLI, Zig, Gradle, Maven, CMake, Gitleaks, fd, Tree-sitter, Bun, pnpm, and psql
+- CLI tools: Git, tmux, ripgrep, fzf, tree, tldr, Neovim, Watchman, ngrok, jq, wget, GitHub CLI, Zig, Gradle, Maven, CMake, Gitleaks, fd, Tree-sitter, Bun, pnpm, psql, and borders for AeroSpace window outlines
 - Runtimes: Node via NVM, Java 25 LTS, Ruby, CocoaPods, Spring Boot CLI, Go, gopls, Zig, and zls
 - PostgreSQL 18 as a Homebrew service on new Macs. Existing PostgreSQL 17 services are left running until their data is explicitly migrated.
 - Optional GUI applications: Arc, Postman, WhatsApp, Spotify, Zoom, JetBrains Toolbox, Blip, AeroSpace, Dash, Ghostty, Karabiner-Elements, Obsidian, Raycast, and JetBrains Mono Nerd Font
 - Git identity, rebase pulls, default branch preference, and a macOS-keychain SSH key when no key exists
 - Repository-managed AeroSpace, Ghostty, Karabiner, tmux, Neovim, tmux-sessionizer, tmux-persist, screenshot organizer, and managed Zsh environment files
 
-The config installer copies only its own files and never removes unrelated files from `~/.config`. It preserves tmux-persist itself but never preserves its saved sessions. Before any shell changes, the installer creates a private backup under `~/.local/state/dev-setup/backups/shell`, including tmux-resurrect/continuum state when present.
+The config installer copies only its own files and never removes unrelated files from `~/.config`. It installs the screenshot organizer as a user LaunchAgent. It preserves tmux-persist itself but never preserves its saved sessions. Before any shell changes, the installer creates a private backup under `~/.local/state/dev-setup/backups/shell`, including tmux-resurrect/continuum state when present.
 
 ## Ubuntu
 

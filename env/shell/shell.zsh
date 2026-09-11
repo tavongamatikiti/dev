@@ -29,3 +29,7 @@ export BUN_INSTALL="$HOME/.bun"
 
 autoload -Uz compinit
 compinit
+
+if (( $+commands[ngrok] )); then
+  eval "$(ngrok completion)"
+fi

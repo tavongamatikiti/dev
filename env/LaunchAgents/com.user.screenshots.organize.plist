@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.user.screenshots.organize</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__HOME__/.local/bin/organize-screenshots</string>
+  </array>
+  <key>WatchPaths</key>
+  <array>
+    <string>__HOME__/Pictures/Screenshots</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>__HOME__/Pictures/Screenshots/.organize.stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/Pictures/Screenshots/.organize.stderr.log</string>
+  <key>ThrottleInterval</key>
+  <integer>2</integer>
+</dict>
+</plist>

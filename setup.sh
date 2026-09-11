@@ -111,7 +111,7 @@ install_xcode() {
 
 install_core() {
   local packages=(
-    git tmux ripgrep fzf tree tldr neovim watchman ngrok jq wget gh zig zls go gradle maven
+    git tmux ripgrep fzf tree tldr neovim watchman jq wget gh zig zls go gradle maven
     ninja pipx yq shellcheck zsh-completions zsh-autosuggestions zsh-syntax-highlighting
     bear cmake cocoapods coreutils ddgr fd ffmpeg gitleaks mole poppler python-tk@3.14
     tree-sitter tree-sitter-cli bun
@@ -120,6 +120,19 @@ install_core() {
   for package in "${packages[@]}"; do
     brew_install "$package"
   done
+  brew_install_cask ngrok
+  install_borders
+}
+
+install_borders() {
+  if brew list borders >/dev/null 2>&1; then
+    printf 'borders already installed.\n'
+    return
+  fi
+
+  run brew tap felixkratz/formulae
+  run brew trust --formula felixkratz/formulae/borders
+  run brew install felixkratz/formulae/borders
 }
 
 install_go_tools() {

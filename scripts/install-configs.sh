@@ -5,6 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 SOURCE_CONFIG_DIR="$PROJECT_DIR/env/.config"
+SOURCE_LAUNCH_AGENT="$PROJECT_DIR/env/LaunchAgents/com.user.screenshots.organize.plist"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 DRY_RUN=0
 
@@ -63,5 +64,27 @@ run mkdir -p "$HOME/.local/bin"
 run install -m 755 "$SOURCE_CONFIG_DIR/tmux-sessionizer/tmux-sessionizer.sh" "$HOME/.local/bin/tmux-sessionizer"
 run install -m 755 "$SOURCE_CONFIG_DIR/dev-setup/tmux-persist" "$HOME/.local/bin/tmux-persist"
 run install -m 755 "$SOURCE_CONFIG_DIR/dev-setup/organize-screenshots.sh" "$HOME/.local/bin/organize-screenshots"
+
+install_screenshot_launch_agent() {
+  local target_dir="$HOME/Library/LaunchAgents"
+  local target_file="$target_dir/com.user.screenshots.organize.plist"
+  [[ -f "$SOURCE_LAUNCH_AGENT" ]] || {
+    printf 'Missing screenshot LaunchAgent template: %s\n' "$SOURCE_LAUNCH_AGENT" >&2
+    exit 1
+  }
+
+  if [[ "$DRY_RUN" == "1" ]]; then
+    printf '[dry-run] install screenshot organizer LaunchAgent at %s\n' "$target_file"
+    printf '[dry-run] load screenshot organizer LaunchAgent for the current user\n'
+    return
+  fi
+
+  mkdir -p "$target_dir"
+  sed "s|__HOME__|$HOME|g" "$SOURCE_LAUNCH_AGENT" > "$target_file"
+  launchctl bootout "gui/$(id -u)" "$target_file" >/dev/null 2>&1 || true
+  launchctl bootstrap "gui/$(id -u)" "$target_file"
+}
+
+install_screenshot_launch_agent
 
 printf 'Configuration installation complete.\n'

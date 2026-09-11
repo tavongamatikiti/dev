@@ -15,7 +15,6 @@ declare -a MAP=(
   "com.kapeli.dashdoc:D"
   "com.spotify.client:M"
   "com.apple.Music:M"
-  "notion.id:N"
   "com.apple.iCal:C"
   "com.apple.systempreferences:Y"
   "org.pqrs.Karabiner-Elements.Settings:Y"

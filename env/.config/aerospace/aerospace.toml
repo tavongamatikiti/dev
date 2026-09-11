@@ -110,10 +110,6 @@ if.app-id = 'com.apple.Music'
 run = ['move-node-to-workspace M', 'balance-sizes --workspace M']
 
 [[on-window-detected]]
-if.app-id = 'notion.id'
-run = ['move-node-to-workspace N', 'balance-sizes --workspace N']
-
-[[on-window-detected]]
 if.app-id = 'com.apple.iCal'
 run = ['move-node-to-workspace C', 'balance-sizes --workspace C']
 
