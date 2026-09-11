@@ -40,6 +40,12 @@ EOF
   chmod +x "$TEST_BIN/$command"
 done
 
+cat > "$TEST_BIN/curl" <<'EOF'
+#!/usr/bin/env bash
+exit 77
+EOF
+chmod +x "$TEST_BIN/curl"
+
 help_output=$(PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" "$PROJECT_DIR/setup.sh" --help || true)
 [[ "$help_output" == *'Usage:'* ]] || fail 'setup --help should print usage without starting setup'
 
@@ -74,5 +80,15 @@ bootstrap_output=$(TEST_BREW_MISSING=1 PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" 
 [[ "$bootstrap_output" == *'brew install ddgr'* ]] || fail 'fresh-Mac setup should install ddgr'
 [[ "$bootstrap_output" == *'brew install gitleaks'* ]] || fail 'fresh-Mac setup should install gitleaks'
 [[ "$bootstrap_output" == *'brew install mole'* ]] || fail 'fresh-Mac setup should install mole'
+
+for installer in install-mac.sh install-ubuntu.sh; do
+  set +e
+  stdin_output=$(PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" \
+    bash -s -- --ref v1.0.3 --target "$TEST_HOME/${installer%.sh}" < "$PROJECT_DIR/$installer" 2>&1)
+  stdin_status=$?
+  set -e
+  [[ "$stdin_status" == '77' ]] || fail "$installer should reach curl when read from stdin"
+  [[ "$stdin_output" != *'BASH_SOURCE'* ]] || fail "$installer must support execution from stdin"
+done
 
 printf 'PASS: setup CLI supports help and a non-mutating config dry run\n'

@@ -26,9 +26,11 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -f "$SCRIPT_DIR/setup.sh" ]]; then
-  exec "$SCRIPT_DIR/setup.sh" "${SETUP_ARGS[@]}"
+if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [[ -f "$SCRIPT_DIR/setup.sh" ]]; then
+    exec "$SCRIPT_DIR/setup.sh" "${SETUP_ARGS[@]}"
+  fi
 fi
 
 [[ -n "$REF" ]] || { printf 'Use --ref with a release tag when running this through curl.\n' >&2; exit 1; }
@@ -44,4 +46,3 @@ source_dir="$(find "$temporary_dir" -mindepth 1 -maxdepth 1 -type d -name 'dev-*
 mkdir -p "$(dirname "$TARGET_DIR")"
 mv "$source_dir" "$TARGET_DIR"
 exec "$TARGET_DIR/setup.sh" "${SETUP_ARGS[@]}"
-
