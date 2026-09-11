@@ -115,7 +115,7 @@ require_sudo() {
 
 install_apt_packages() {
   local packages=(
-    build-essential ca-certificates curl gnupg git zsh tmux neovim ripgrep fzf tree jq wget
+    build-essential ca-certificates curl gnupg git zsh tmux neovim ripgrep fzf tree jq wget zip unzip
     ninja-build cmake pipx shellcheck fd-find ffmpeg poppler-utils postgresql-client python3 python3-pip python3-venv
     maven gradle podman uidmap slirp4netns fuse-overlayfs zsh-autosuggestions zsh-syntax-highlighting
   )
