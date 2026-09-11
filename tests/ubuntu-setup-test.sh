@@ -92,6 +92,23 @@ if ! PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" \
   fail 'Ubuntu setup must source and run NVM with nounset disabled'
 fi
 
+mkdir -p "$TEST_HOME/.sdkman/bin"
+cat > "$TEST_HOME/.sdkman/bin/sdkman-init.sh" <<'EOF'
+if [[ "$-" == *u* ]]; then
+  printf 'SDKMAN was sourced with nounset enabled\n' >&2
+  return 93
+fi
+sdk() {
+  [[ "$-" != *u* ]] || { printf 'SDKMAN was called with nounset enabled\n' >&2; return 94; }
+}
+EOF
+
+if ! PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" \
+  DEV_SETUP_OS_RELEASE_FILE="$SUPPORTED_RELEASE" DEV_SETUP_SUBUID_FILE="$SUBUID_FILE" DEV_SETUP_SUBGID_FILE="$SUBGID_FILE" \
+  "$PROJECT_DIR/ubuntu/setup.sh" --only sdkman >/dev/null 2>&1; then
+  fail 'Ubuntu setup must source and run SDKMAN with nounset disabled'
+fi
+
 if rg -q '—' "$PROJECT_DIR/README.md"; then
   fail 'README must not contain em dashes'
 fi

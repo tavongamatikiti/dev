@@ -177,6 +177,40 @@ run_nvm() {
   return "$nvm_status"
 }
 
+load_sdkman() {
+  local nounset_enabled=0 sdkman_status
+  case "$-" in
+    *u*) nounset_enabled=1; set +u ;;
+  esac
+  export SDKMAN_DIR="$HOME/.sdkman"
+  # shellcheck disable=SC1091
+  if source "$SDKMAN_DIR/bin/sdkman-init.sh"; then
+    sdkman_status=0
+  else
+    sdkman_status=$?
+  fi
+  if [[ "$nounset_enabled" == '1' ]]; then
+    set -u
+  fi
+  return "$sdkman_status"
+}
+
+run_sdk() {
+  local nounset_enabled=0 sdkman_status
+  case "$-" in
+    *u*) nounset_enabled=1; set +u ;;
+  esac
+  if sdk "$@"; then
+    sdkman_status=0
+  else
+    sdkman_status=$?
+  fi
+  if [[ "$nounset_enabled" == '1' ]]; then
+    set -u
+  fi
+  return "$sdkman_status"
+}
+
 install_languages() {
   if [[ ! -d "$HOME/.nvm" ]]; then
     if [[ "$DRY_RUN" == "1" ]]; then
@@ -290,9 +324,8 @@ install_sdkman() {
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] sdk install springboot\n'
   elif [[ ! -d "$HOME/.sdkman/candidates/springboot/current" ]]; then
-    # shellcheck disable=SC1091
-    source "$HOME/.sdkman/bin/sdkman-init.sh"
-    sdk install springboot
+    load_sdkman
+    run_sdk install springboot
   else
     printf 'Spring Boot CLI already installed.\n'
   fi
@@ -323,8 +356,7 @@ verify_setup() {
   fi
 
   [[ -s "$HOME/.nvm/nvm.sh" ]] && load_nvm
-  export SDKMAN_DIR="$HOME/.sdkman"
-  [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
+  [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && load_sdkman
   XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
   export GOPATH="${GOPATH:-$XDG_CONFIG_HOME/go}"
   export PATH="$(brew --prefix postgresql@18)/bin:$GOPATH/bin:$PATH"

@@ -269,6 +269,40 @@ run_nvm() {
   return "$nvm_status"
 }
 
+load_sdkman() {
+  local nounset_enabled=0 sdkman_status
+  case "$-" in
+    *u*) nounset_enabled=1; set +u ;;
+  esac
+  export SDKMAN_DIR="$HOME/.sdkman"
+  # shellcheck disable=SC1091
+  if source "$SDKMAN_DIR/bin/sdkman-init.sh"; then
+    sdkman_status=0
+  else
+    sdkman_status=$?
+  fi
+  if [[ "$nounset_enabled" == '1' ]]; then
+    set -u
+  fi
+  return "$sdkman_status"
+}
+
+run_sdk() {
+  local nounset_enabled=0 sdkman_status
+  case "$-" in
+    *u*) nounset_enabled=1; set +u ;;
+  esac
+  if sdk "$@"; then
+    sdkman_status=0
+  else
+    sdkman_status=$?
+  fi
+  if [[ "$nounset_enabled" == '1' ]]; then
+    set -u
+  fi
+  return "$sdkman_status"
+}
+
 install_languages() {
   if [[ ! -s "$HOME/.nvm/nvm.sh" ]]; then
     if [[ "$DRY_RUN" == "1" ]]; then
@@ -323,9 +357,8 @@ install_sdkman() {
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] sdk install springboot\n'
   elif [[ ! -d "$HOME/.sdkman/candidates/springboot/current" ]]; then
-    # shellcheck disable=SC1091
-    source "$HOME/.sdkman/bin/sdkman-init.sh"
-    sdk install springboot
+    load_sdkman
+    run_sdk install springboot
   else
     printf 'Spring Boot CLI already installed.\n'
   fi
@@ -421,8 +454,7 @@ verify_setup() {
   export BUN_INSTALL="$HOME/.bun"
   export PATH="$HOME/.local/opt/go1.26.1/bin:$HOME/.local/opt/zig-0.15.2:$HOME/.local/bin:$GOPATH/bin:$BUN_INSTALL/bin:$PATH"
   [[ -s "$HOME/.nvm/nvm.sh" ]] && load_nvm
-  export SDKMAN_DIR="$HOME/.sdkman"
-  [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
+  [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && load_sdkman
   for command in git tmux rg fzf nvim node bun pnpm java javac mvn gradle spring go gopls zig psql podman; do
     if command_exists "$command"; then
       printf 'verified command: %s\n' "$command"
