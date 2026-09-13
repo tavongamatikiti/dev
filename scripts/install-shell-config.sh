@@ -8,6 +8,7 @@ TEMPLATE="$PROJECT_DIR/env/shell/shell.zsh"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 TARGET_DIR="$XDG_CONFIG_HOME/dev-setup"
 TARGET_FILE="$TARGET_DIR/shell.zsh"
+COMPLETIONS_INSTALLER="$PROJECT_DIR/scripts/install-zsh-completions.sh"
 ZSHRC="$HOME/.zshrc"
 START_MARKER='# >>> dev-setup managed shell >>>'
 END_MARKER='# <<< dev-setup managed shell <<<'
@@ -32,16 +33,19 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -f "$TEMPLATE" ]] || { printf 'Missing shell template: %s\n' "$TEMPLATE" >&2; exit 1; }
+[[ -f "$COMPLETIONS_INSTALLER" ]] || { printf 'Missing Zsh completion installer: %s\n' "$COMPLETIONS_INSTALLER" >&2; exit 1; }
 
 if [[ "$DRY_RUN" == "1" ]]; then
   printf '[dry-run] install managed Zsh environment at %s\n' "$TARGET_FILE"
   printf '[dry-run] add one managed source block to %s\n' "$ZSHRC"
+  "$COMPLETIONS_INSTALLER" --dry-run
   exit 0
 fi
 
 mkdir -p "$TARGET_DIR"
 install -m 644 "$TEMPLATE" "$TARGET_FILE"
 touch "$ZSHRC"
+"$COMPLETIONS_INSTALLER"
 
 if ! grep -Fqx "$START_MARKER" "$ZSHRC" >/dev/null; then
   {

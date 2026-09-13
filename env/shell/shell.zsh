@@ -1,5 +1,9 @@
 # Managed by the Mac development setup. Keep personal shell settings in ~/.zshrc.
 
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+zsh_completion_dir="$XDG_CONFIG_HOME/zsh/completions"
+[[ -d "$zsh_completion_dir" ]] && fpath=("$zsh_completion_dir" $fpath)
+
 if (( $+commands[brew] )); then
   brew_prefix="$(brew --prefix)"
   export JAVA_HOME="$(brew --prefix openjdk@25)/libexec/openjdk.jdk/Contents/Home"
@@ -10,9 +14,10 @@ if (( $+commands[brew] )); then
   [[ -d "$brew_zsh_completions" ]] && fpath=("$brew_zsh_completions" $fpath)
   [[ -r "$brew_prefix/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && source "$brew_prefix/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
   [[ -r "$brew_prefix/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] && source "$brew_prefix/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+  [[ -r "$brew_prefix/opt/fzf/shell/key-bindings.zsh" ]] && source "$brew_prefix/opt/fzf/shell/key-bindings.zsh"
+  [[ -r "$brew_prefix/opt/fzf/shell/completion.zsh" ]] && source "$brew_prefix/opt/fzf/shell/completion.zsh"
 fi
 
-export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 export GOPATH="${GOPATH:-$XDG_CONFIG_HOME/go}"
 export PATH="$JAVA_HOME/bin:$HOME/.local/bin:$GOPATH/bin:${postgres_bin:-}:$PATH"
 
@@ -29,7 +34,3 @@ export BUN_INSTALL="$HOME/.bun"
 
 autoload -Uz compinit
 compinit
-
-if (( $+commands[ngrok] )); then
-  eval "$(ngrok completion)"
-fi

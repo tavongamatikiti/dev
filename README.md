@@ -1,6 +1,25 @@
-# Development Setup
+<div align="center">
+  <h1>dev</h1>
+  <p>Reproducible development setup for macOS and private Ubuntu servers.</p>
+</div>
 
-Reproducible developer environment setup for macOS and private Ubuntu servers.
+## Install
+
+### macOS
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.9/install-mac.sh | bash -s -- --ref v1.0.9
+```
+
+### Ubuntu
+
+Run this as the normal `dev` account with `sudo` access, never as root:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.9/install-ubuntu.sh | bash -s -- --ref v1.0.9
+```
+
+The bootstrap refuses to overwrite an existing `~/Developer/dev` folder.
 
 ## Before You Start
 
@@ -45,7 +64,7 @@ Available components are `backup`, `xcode`, `homebrew`, `core`, `languages`, `po
 - PostgreSQL 18 as a Homebrew service on new Macs. Existing PostgreSQL 17 services are left running until their data is explicitly migrated.
 - Optional GUI applications: Arc, Postman, WhatsApp, Spotify, Zoom, JetBrains Toolbox, Blip, AeroSpace, Dash, Ghostty, Karabiner-Elements, Obsidian, Raycast, and JetBrains Mono Nerd Font
 - Git identity, rebase pulls, default branch preference, and separate macOS-keychain SSH keys for GitHub (`id_ed25519`) and GitLab (`id_ed25519_gitlab`). The GitLab key prompts for its own email address.
-- Repository-managed AeroSpace, Ghostty, Karabiner, tmux, Neovim, tmux-sessionizer, tmux-persist, screenshot organizer, and managed Zsh environment files
+- Repository-managed AeroSpace, Ghostty, Karabiner, tmux, Neovim, tmux-sessionizer, tmux-persist, screenshot organizer, managed Zsh environment files, static completions for GitHub CLI, Gitleaks, ripgrep, and ngrok, plus fzf key bindings and completions
 
 The config installer copies only its own files and never removes unrelated files from `~/.config`. It installs the screenshot organizer as a user LaunchAgent. It preserves tmux-persist itself but never preserves its saved sessions. Before any shell changes, the installer creates a private backup under `~/.local/state/dev-setup/backups/shell`, including tmux-resurrect/continuum state when present.
 
@@ -61,11 +80,4 @@ Ubuntu setup installs developer tooling, Java 25, Node, Bun, pnpm, Go, Zig, Spri
 
 It does not configure UFW, SSH, port 22, Headscale, VPNs, Docker, application services, databases, reverse proxies, or containers. Rootless Podman has no containers or exposed ports after setup.
 
-The same repository location is used on both platforms: `~/Developer/dev`. When published as a release, install a pinned tag with curl:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.8/install-mac.sh | bash -s -- --ref v1.0.8
-curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.8/install-ubuntu.sh | bash -s -- --ref v1.0.8
-```
-
-Replace `v1.0.8` with the release tag. The curl bootstrap refuses to overwrite an existing `~/Developer/dev` folder.
+The same repository location is used on both platforms: `~/Developer/dev`.
