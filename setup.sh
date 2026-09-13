@@ -275,6 +275,7 @@ configure_git() {
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] configure Git identity, pull rebase, and default branch when needed\n'
     printf '[dry-run] generate and add an SSH key only when %s is absent\n' "$HOME/.ssh/id_ed25519"
+    printf '[dry-run] generate and add an SSH key only when %s is absent\n' "$HOME/.ssh/id_ed25519_gitlab"
     return
   fi
 
@@ -293,21 +294,28 @@ configure_git() {
   git config --global pull.rebase true
   git config --global init.defaultBranch master
 
-  if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
-    printf 'SSH key already exists: %s\n' "$HOME/.ssh/id_ed25519"
-    return
-  fi
-
   run mkdir -p "$HOME/.ssh"
   run chmod 700 "$HOME/.ssh"
-  run ssh-keygen -t ed25519 -C "$email" -f "$HOME/.ssh/id_ed25519" -N ''
-  if [[ "$DRY_RUN" == "0" ]] && ssh-add --apple-use-keychain "$HOME/.ssh/id_ed25519" 2>/dev/null; then
-    printf 'SSH key added to the macOS keychain.\n'
-  fi
-  if [[ "$DRY_RUN" == "0" ]]; then
-    printf 'Add this SSH key to GitHub:\n'
-    cat "$HOME/.ssh/id_ed25519.pub"
-  fi
+
+  local key_path key_service
+  local key_paths=("$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_ed25519_gitlab")
+  local key_services=(GitHub GitLab)
+  local index
+  for index in "${!key_paths[@]}"; do
+    key_path="${key_paths[index]}"
+    key_service="${key_services[index]}"
+    if [[ -f "$key_path" ]]; then
+      printf 'SSH key already exists: %s\n' "$key_path"
+      continue
+    fi
+
+    run ssh-keygen -t ed25519 -C "$email" -f "$key_path" -N ''
+    if ssh-add --apple-use-keychain "$key_path" 2>/dev/null; then
+      printf '%s SSH key added to the macOS keychain.\n' "$key_service"
+    fi
+    printf 'Add this SSH key to %s:\n' "$key_service"
+    cat "$key_path.pub"
+  done
 }
 
 install_sdkman() {
