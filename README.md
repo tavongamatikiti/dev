@@ -44,7 +44,7 @@ Available components are `backup`, `xcode`, `homebrew`, `core`, `languages`, `po
 - Runtimes: Node via NVM, Java 25 LTS, Ruby, CocoaPods, Spring Boot CLI, Go, gopls, Zig, and zls
 - PostgreSQL 18 as a Homebrew service on new Macs. Existing PostgreSQL 17 services are left running until their data is explicitly migrated.
 - Optional GUI applications: Arc, Postman, WhatsApp, Spotify, Zoom, JetBrains Toolbox, Blip, AeroSpace, Dash, Ghostty, Karabiner-Elements, Obsidian, Raycast, and JetBrains Mono Nerd Font
-- Git identity, rebase pulls, default branch preference, and a macOS-keychain SSH key when no key exists
+- Git identity, rebase pulls, default branch preference, and separate macOS-keychain SSH keys for GitHub (`id_ed25519`) and GitLab (`id_ed25519_gitlab`). The GitLab key prompts for its own email address.
 - Repository-managed AeroSpace, Ghostty, Karabiner, tmux, Neovim, tmux-sessionizer, tmux-persist, screenshot organizer, and managed Zsh environment files
 
 The config installer copies only its own files and never removes unrelated files from `~/.config`. It installs the screenshot organizer as a user LaunchAgent. It preserves tmux-persist itself but never preserves its saved sessions. Before any shell changes, the installer creates a private backup under `~/.local/state/dev-setup/backups/shell`, including tmux-resurrect/continuum state when present.
@@ -64,8 +64,8 @@ It does not configure UFW, SSH, port 22, Headscale, VPNs, Docker, application se
 The same repository location is used on both platforms: `~/Developer/dev`. When published as a release, install a pinned tag with curl:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.7/install-mac.sh | bash -s -- --ref v1.0.7
-curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.7/install-ubuntu.sh | bash -s -- --ref v1.0.7
+curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.8/install-mac.sh | bash -s -- --ref v1.0.8
+curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.8/install-ubuntu.sh | bash -s -- --ref v1.0.8
 ```
 
-Replace `v1.0.7` with the release tag. The curl bootstrap refuses to overwrite an existing `~/Developer/dev` folder.
+Replace `v1.0.8` with the release tag. The curl bootstrap refuses to overwrite an existing `~/Developer/dev` folder.

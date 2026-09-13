@@ -271,7 +271,7 @@ install_apps() {
 }
 
 configure_git() {
-  local email name
+  local email name gitlab_key_email
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] configure Git identity, pull rebase, and default branch when needed\n'
     printf '[dry-run] generate and add an SSH key only when %s is absent\n' "$HOME/.ssh/id_ed25519"
@@ -294,10 +294,15 @@ configure_git() {
   git config --global pull.rebase true
   git config --global init.defaultBranch master
 
+  if [[ ! -f "$HOME/.ssh/id_ed25519_gitlab" ]]; then
+    read -r -p 'GitLab SSH key email: ' gitlab_key_email
+    [[ -n "$gitlab_key_email" ]] || { printf 'GitLab SSH key email cannot be empty.\n' >&2; exit 1; }
+  fi
+
   run mkdir -p "$HOME/.ssh"
   run chmod 700 "$HOME/.ssh"
 
-  local key_path key_service
+  local key_path key_service key_email
   local key_paths=("$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_ed25519_gitlab")
   local key_services=(GitHub GitLab)
   local index
@@ -309,7 +314,12 @@ configure_git() {
       continue
     fi
 
-    run ssh-keygen -t ed25519 -C "$email" -f "$key_path" -N ''
+    if [[ "$key_service" == 'GitHub' ]]; then
+      key_email="$email"
+    else
+      key_email="$gitlab_key_email"
+    fi
+    run ssh-keygen -t ed25519 -C "$key_email" -f "$key_path" -N ''
     if ssh-add --apple-use-keychain "$key_path" 2>/dev/null; then
       printf '%s SSH key added to the macOS keychain.\n' "$key_service"
     fi
