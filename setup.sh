@@ -13,7 +13,7 @@ Usage: ./setup.sh [--dry-run] [--skip-apps] [--only COMPONENT]
 
 Set up this Mac's development tools and configuration.
 
-Components: backup, xcode, homebrew, core, languages, postgres, apps, git, sdkman, shell, configs, verify
+Components: backup, xcode, homebrew, core, languages, postgres, apps, git, shell, configs, verify
   --dry-run          Show commands without changing the machine.
   --skip-apps        Do not install graphical applications.
   --only COMPONENT   Run exactly one component.
@@ -60,6 +60,15 @@ require_macos() {
   fi
 }
 
+require_sudo() {
+  # Pkg-based casks (Karabiner-Elements, Zoom) need one admin password; ask upfront instead of blocking mid-run.
+  if [[ "$DRY_RUN" == "1" ]]; then
+    printf '[dry-run] sudo credentials will be requested before privileged cask installs\n'
+  else
+    sudo -v
+  fi
+}
+
 ensure_brew() {
   if command_exists brew; then
     printf 'Homebrew already installed.\n'
@@ -71,7 +80,8 @@ ensure_brew() {
     return
   fi
 
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  # NONINTERACTIVE skips the installer's RETURN confirmation (sudo password is still requested when needed).
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   if [[ -x /opt/homebrew/bin/brew ]]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
   elif [[ -x /usr/local/bin/brew ]]; then
@@ -114,13 +124,12 @@ install_core() {
     git tmux ripgrep fzf tree tldr neovim watchman jq wget gh zig zls go gradle maven
     ninja pipx yq shellcheck zsh-completions zsh-autosuggestions zsh-syntax-highlighting
     bear cmake cocoapods coreutils ddgr fd ffmpeg gitleaks mole poppler python-tk@3.14
-    tree-sitter tree-sitter-cli bun
+    tree-sitter tree-sitter-cli bun cloudflared
   )
   local package
   for package in "${packages[@]}"; do
     brew_install "$package"
   done
-  brew_install_cask ngrok
   install_borders
 }
 
@@ -177,101 +186,106 @@ run_nvm() {
   return "$nvm_status"
 }
 
-load_sdkman() {
-  local nounset_enabled=0 sdkman_status
-  case "$-" in
-    *u*) nounset_enabled=1; set +u ;;
-  esac
-  export SDKMAN_DIR="$HOME/.sdkman"
-  # shellcheck disable=SC1091
-  if source "$SDKMAN_DIR/bin/sdkman-init.sh"; then
-    sdkman_status=0
-  else
-    sdkman_status=$?
-  fi
-  if [[ "$nounset_enabled" == '1' ]]; then
-    set -u
-  fi
-  return "$sdkman_status"
-}
-
-run_sdk() {
-  local nounset_enabled=0 sdkman_status
-  case "$-" in
-    *u*) nounset_enabled=1; set +u ;;
-  esac
-  if sdk "$@"; then
-    sdkman_status=0
-  else
-    sdkman_status=$?
-  fi
-  if [[ "$nounset_enabled" == '1' ]]; then
-    set -u
-  fi
-  return "$sdkman_status"
-}
-
-install_languages() {
-  if [[ ! -d "$HOME/.nvm" ]]; then
-    if [[ "$DRY_RUN" == "1" ]]; then
-      printf '[dry-run] install NVM and the Node.js LTS release\n'
-    else
-      curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | PROFILE=/dev/null bash
-    fi
-  else
+install_nvm() { # installs NVM unless present
+  if [[ -d "$HOME/.nvm" ]]; then
     printf 'nvm already installed.\n'
+    return
   fi
+  if [[ "$DRY_RUN" == "1" ]]; then
+    printf '[dry-run] install NVM and the Node.js LTS release\n'
+  else
+    curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | PROFILE=/dev/null bash
+  fi
+}
 
+activate_node_lts() { # activates Node LTS and ensures pnpm
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] activate Node.js LTS and install pnpm\n'
-  else
-    load_nvm
-    run_nvm install --lts
-    run_nvm use --lts
-    if command_exists pnpm; then
-      printf 'pnpm already installed.\n'
-    else
-      npm install --global pnpm
-    fi
+    return
   fi
+  load_nvm
+  run_nvm install --lts
+  run_nvm use --lts
+  if command_exists pnpm; then
+    printf 'pnpm already installed.\n'
+  else
+    npm install --global pnpm
+  fi
+}
 
+install_java_cocoapods() { # JDK, Ruby, and CocoaPods through Homebrew
   brew_install openjdk@25
   brew_install ruby
-
   if [[ ! -e /Library/Java/JavaVirtualMachines/openjdk-25.jdk ]]; then
     run sudo ln -sfn "$(brew --prefix openjdk@25)/libexec/openjdk.jdk" /Library/Java/JavaVirtualMachines/openjdk-25.jdk
   fi
-
-  if ! command_exists pod; then
-    run sudo gem install cocoapods
-  else
+  if command_exists pod; then
     printf 'cocoapods already installed.\n'
+  else
+    run sudo gem install cocoapods
   fi
+}
+
+install_languages() {
+  install_nvm
+  activate_node_lts
+  install_java_cocoapods
+}
+
+postgres_service_started() { # $1 = service name; true when brew services reports it started
+  brew services list | awk -v service="$1" '$1 == service && $2 == "started" { found = 1 } END { exit !found }'
 }
 
 install_postgres() {
   brew_install postgresql@18
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] brew services start postgresql@18 when PostgreSQL 17 is not already running\n'
-  elif brew services list | awk '$1 == "postgresql@17" && $2 == "started" { found = 1 } END { exit !found }'; then
+    return
+  fi
+  if postgres_service_started postgresql@17; then
     printf 'PostgreSQL 17 is already running. PostgreSQL 18 was installed but was not started; migrate data explicitly before switching services.\n'
-  elif ! brew services list | awk '$1 == "postgresql@18" && $2 == "started" { found = 1 } END { exit !found }'; then
-    brew services start postgresql@18
-  else
+    return
+  fi
+  if postgres_service_started postgresql@18; then
     printf 'postgresql@18 already running.\n'
+  else
+    brew services start postgresql@18
   fi
 }
 
 install_apps() {
-  local apps=(arc postman whatsapp spotify zoom jetbrains-toolbox blip aerospace dash ghostty karabiner-elements obsidian raycast font-jetbrains-mono-nerd-font)
+  local apps=(arc postman whatsapp spotify zoom jetbrains-toolbox blip ghostty karabiner-elements obsidian raycast font-jetbrains-mono-nerd-font)
   local app
   for app in "${apps[@]}"; do
     brew_install_cask "$app"
   done
 }
 
+ensure_git_config_value() { # $1 = config key, $2 = prompt; prints the effective value
+  local value
+  value="$(git config --global "$1" || true)"
+  if [[ -z "$value" ]]; then
+    read -r -p "$2" value
+    git config --global "$1" "$value"
+  fi
+  printf '%s\n' "$value"
+}
+
+generate_ssh_key() { # $1 = path, $2 = service, $3 = email; skips existing keys
+  if [[ -f "$1" ]]; then
+    printf 'SSH key already exists: %s\n' "$1"
+    return
+  fi
+  run ssh-keygen -t ed25519 -C "$3" -f "$1" -N ''
+  if ssh-add --apple-use-keychain "$1" 2>/dev/null; then
+    printf '%s SSH key added to the macOS keychain.\n' "$2"
+  fi
+  printf 'Add this SSH key to %s:\n' "$2"
+  cat "$1.pub"
+}
+
 configure_git() {
-  local email name gitlab_key_email
+  local email gitlab_key_email
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] configure Git identity, pull rebase, and default branch when needed\n'
     printf '[dry-run] generate and add an SSH key only when %s is absent\n' "$HOME/.ssh/id_ed25519"
@@ -279,18 +293,8 @@ configure_git() {
     return
   fi
 
-  email="$(git config --global user.email || true)"
-  name="$(git config --global user.name || true)"
-
-  if [[ -z "$email" ]]; then
-    read -r -p 'GitHub email: ' email
-    git config --global user.email "$email"
-  fi
-  if [[ -z "$name" ]]; then
-    read -r -p 'GitHub name: ' name
-    git config --global user.name "$name"
-  fi
-
+  email="$(ensure_git_config_value user.email 'GitHub email: ')"
+  ensure_git_config_value user.name 'GitHub name: ' >/dev/null
   git config --global pull.rebase true
   git config --global init.defaultBranch master
 
@@ -302,51 +306,16 @@ configure_git() {
   run mkdir -p "$HOME/.ssh"
   run chmod 700 "$HOME/.ssh"
 
-  local key_path key_service key_email
+  local index
   local key_paths=("$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_ed25519_gitlab")
   local key_services=(GitHub GitLab)
-  local index
   for index in "${!key_paths[@]}"; do
-    key_path="${key_paths[index]}"
-    key_service="${key_services[index]}"
-    if [[ -f "$key_path" ]]; then
-      printf 'SSH key already exists: %s\n' "$key_path"
-      continue
-    fi
-
-    if [[ "$key_service" == 'GitHub' ]]; then
-      key_email="$email"
+    if [[ "${key_services[index]}" == 'GitHub' ]]; then
+      generate_ssh_key "${key_paths[index]}" GitHub "$email"
     else
-      key_email="$gitlab_key_email"
+      generate_ssh_key "${key_paths[index]}" GitLab "$gitlab_key_email"
     fi
-    run ssh-keygen -t ed25519 -C "$key_email" -f "$key_path" -N ''
-    if ssh-add --apple-use-keychain "$key_path" 2>/dev/null; then
-      printf '%s SSH key added to the macOS keychain.\n' "$key_service"
-    fi
-    printf 'Add this SSH key to %s:\n' "$key_service"
-    cat "$key_path.pub"
   done
-}
-
-install_sdkman() {
-  if [[ ! -d "$HOME/.sdkman" ]]; then
-    if [[ "$DRY_RUN" == "1" ]]; then
-      printf '[dry-run] install SDKMAN\n'
-    else
-      curl -s https://get.sdkman.io | rcupdate=false bash
-    fi
-  else
-    printf 'SDKMAN already installed.\n'
-  fi
-
-  if [[ "$DRY_RUN" == "1" ]]; then
-    printf '[dry-run] sdk install springboot\n'
-  elif [[ ! -d "$HOME/.sdkman/candidates/springboot/current" ]]; then
-    load_sdkman
-    run_sdk install springboot
-  else
-    printf 'Spring Boot CLI already installed.\n'
-  fi
 }
 
 backup_shell_configs() {
@@ -367,18 +336,47 @@ install_configs() {
   "$SCRIPT_DIR/scripts/install-configs.sh" "${args[@]}"
 }
 
+prepare_verify_env() { # activates NVM and extends PATH for verification
+  [[ -s "$HOME/.nvm/nvm.sh" ]] && load_nvm
+  XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+  export GOPATH="${GOPATH:-$XDG_CONFIG_HOME/go}"
+  export PATH="$(brew --prefix postgresql@18)/bin:$GOPATH/bin:$PATH"
+}
+
+check_required_commands() { # $@ = commands; returns 1 when any is missing
+  local command missing=0
+  for command in "$@"; do
+    if command -v "$command" >/dev/null 2>&1; then
+      printf 'verified command: %s\n' "$command"
+    else
+      printf 'missing command: %s\n' "$command" >&2
+      missing=1
+    fi
+  done
+  return "$missing"
+}
+
+check_required_paths() { # $@ = paths; returns 1 when any is missing
+  local path missing=0
+  for path in "$@"; do
+    if [[ -e "$path" ]]; then
+      printf 'verified path: %s\n' "$path"
+    else
+      printf 'missing path: %s\n' "$path" >&2
+      missing=1
+    fi
+  done
+  return "$missing"
+}
+
 verify_setup() {
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] verify installed commands and configuration paths\n'
     return
   fi
 
-  [[ -s "$HOME/.nvm/nvm.sh" ]] && load_nvm
-  [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && load_sdkman
-  XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-  export GOPATH="${GOPATH:-$XDG_CONFIG_HOME/go}"
-  export PATH="$(brew --prefix postgresql@18)/bin:$GOPATH/bin:$PATH"
-  local required_commands=(git tmux rg fzf nvim node bun pnpm java javac mvn gradle spring go gopls zig zls ninja pipx yq shellcheck psql)
+  prepare_verify_env
+  local required_commands=(git tmux rg fzf nvim node bun pnpm java javac mvn gradle go gopls zig zls ninja pipx yq shellcheck psql)
   local required_paths=(
     "$XDG_CONFIG_HOME/nvim/init.lua"
     "$XDG_CONFIG_HOME/tmux/tmux.conf"
@@ -391,35 +389,20 @@ verify_setup() {
     "$XDG_CONFIG_HOME/karabiner/karabiner.json"
     "$XDG_CONFIG_HOME/dev-setup/shell.zsh"
   )
-  local command path missing=0
-
-  for command in "${required_commands[@]}"; do
-    if command -v "$command" >/dev/null 2>&1; then
-      printf 'verified command: %s\n' "$command"
-    else
-      printf 'missing command: %s\n' "$command" >&2
-      missing=1
-    fi
-  done
-  for path in "${required_paths[@]}"; do
-    if [[ -e "$path" ]]; then
-      printf 'verified path: %s\n' "$path"
-    else
-      printf 'missing path: %s\n' "$path" >&2
-      missing=1
-    fi
-  done
+  local missing=0
+  check_required_commands "${required_commands[@]}" || missing=1
+  check_required_paths "${required_paths[@]}" || missing=1
   [[ "$missing" == "0" ]]
 }
 
 require_macos
 
 case "$ONLY_COMPONENT" in
-  ''|backup|xcode|homebrew|core|languages|postgres|apps|git|sdkman|shell|configs|verify) ;;
+  ''|backup|xcode|homebrew|core|languages|postgres|apps|git|shell|configs|verify) ;;
   *) printf 'Unknown component: %s\n' "$ONLY_COMPONENT" >&2; usage >&2; exit 1 ;;
 esac
 
-if [[ -z "$ONLY_COMPONENT" || "$ONLY_COMPONENT" == backup || "$ONLY_COMPONENT" == languages || "$ONLY_COMPONENT" == sdkman || "$ONLY_COMPONENT" == shell ]]; then
+if [[ -z "$ONLY_COMPONENT" || "$ONLY_COMPONENT" == backup || "$ONLY_COMPONENT" == languages || "$ONLY_COMPONENT" == shell ]]; then
   backup_shell_configs
 fi
 run_component xcode && install_xcode
@@ -432,10 +415,10 @@ run_component core && install_go_tools
 run_component languages && install_languages
 run_component postgres && install_postgres
 if [[ "$SKIP_APPS" == "0" ]] && run_component apps; then
+  require_sudo
   install_apps
 fi
 run_component git && configure_git
-run_component sdkman && install_sdkman
 run_component shell && install_shell_environment
 run_component configs && install_configs
 run_component verify && verify_setup

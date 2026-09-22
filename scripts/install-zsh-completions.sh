@@ -59,4 +59,3 @@ fi
 generate_completion gh _gh gh completion -s zsh
 generate_completion gitleaks _gitleaks gitleaks completion zsh
 generate_completion rg _rg rg --generate complete-zsh
-generate_completion ngrok _ngrok env SHELL=/bin/zsh ngrok completion

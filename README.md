@@ -53,18 +53,18 @@ Run one component at a time:
 
 On a new Mac, run `./setup.sh` with no options. It installs every component, including GUI applications. macOS requires you to complete the Xcode Command Line Tools dialog once; then rerun the same command.
 
-Available components are `backup`, `xcode`, `homebrew`, `core`, `languages`, `postgres`, `apps`, `git`, `sdkman`, `shell`, `configs`, and `verify`.
+Available components are `backup`, `xcode`, `homebrew`, `core`, `languages`, `postgres`, `apps`, `git`, `shell`, `configs`, and `verify`.
 
 `./dev-env.sh` remains as a compatibility command for installing configuration files. Use `./dev-env.sh --dry` to preview it.
 
 ## What It Configures
 
-- CLI tools: Git, tmux, ripgrep, fzf, tree, tldr, Neovim, Watchman, ngrok, jq, wget, GitHub CLI, Zig, Gradle, Maven, CMake, Gitleaks, fd, Tree-sitter, Bun, pnpm, psql, and borders for AeroSpace window outlines
-- Runtimes: Node via NVM, Java 25 LTS, Ruby, CocoaPods, Spring Boot CLI, Go, gopls, Zig, and zls
+- CLI tools: Git, tmux, ripgrep, fzf, tree, tldr, Neovim, Watchman, cloudflared, jq, wget, GitHub CLI, Zig, Gradle, Maven, CMake, Gitleaks, fd, Tree-sitter, Bun, pnpm, psql, and borders for AeroSpace window outlines
+- Runtimes: Node via NVM, Java 25 LTS, Ruby, CocoaPods, Go, gopls, Zig, and zls
 - PostgreSQL 18 as a Homebrew service on new Macs. Existing PostgreSQL 17 services are left running until their data is explicitly migrated.
-- Optional GUI applications: Arc, Postman, WhatsApp, Spotify, Zoom, JetBrains Toolbox, Blip, AeroSpace, Dash, Ghostty, Karabiner-Elements, Obsidian, Raycast, and JetBrains Mono Nerd Font
+- Optional GUI applications: Arc, Postman, WhatsApp, Spotify, Zoom, JetBrains Toolbox, Blip, Ghostty, Karabiner-Elements, Obsidian, Raycast, and JetBrains Mono Nerd Font. Karabiner-Elements and Zoom use privileged installers, so one admin password is requested upfront.
 - Git identity, rebase pulls, default branch preference, and separate macOS-keychain SSH keys for GitHub (`id_ed25519`) and GitLab (`id_ed25519_gitlab`). The GitLab key prompts for its own email address.
-- Repository-managed AeroSpace, Ghostty, Karabiner, tmux, Neovim, tmux-sessionizer, tmux-persist, screenshot organizer, managed Zsh environment files, static completions for GitHub CLI, Gitleaks, ripgrep, and ngrok, plus fzf key bindings and completions
+- Repository-managed AeroSpace, Ghostty, Karabiner, tmux, Neovim, tmux-sessionizer, tmux-persist, screenshot organizer, managed Zsh environment files, static completions for GitHub CLI, Gitleaks, and ripgrep, plus fzf key bindings and completions
 
 The config installer copies only its own files and never removes unrelated files from `~/.config`. It installs the screenshot organizer as a user LaunchAgent. It preserves tmux-persist itself but never preserves its saved sessions. Before any shell changes, the installer creates a private backup under `~/.local/state/dev-setup/backups/shell`, including tmux-resurrect/continuum state when present.
 

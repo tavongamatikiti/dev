@@ -65,6 +65,21 @@ run install -m 755 "$SOURCE_CONFIG_DIR/tmux-sessionizer/tmux-sessionizer.sh" "$H
 run install -m 755 "$SOURCE_CONFIG_DIR/dev-setup/tmux-persist" "$HOME/.local/bin/tmux-persist"
 run install -m 755 "$SOURCE_CONFIG_DIR/dev-setup/organize-screenshots.sh" "$HOME/.local/bin/organize-screenshots"
 
+configure_screenshot_location() {
+  # macOS saves to ~/Desktop by default, which the agent can neither see nor read under TCC.
+  local screenshot_dir="$HOME/Pictures/Screenshots"
+
+  if [[ "$DRY_RUN" == "1" ]]; then
+    printf '[dry-run] set macOS screenshot save location to %s\n' "$screenshot_dir"
+    printf '[dry-run] reload the macOS UI server after changing the screenshot location\n'
+    return
+  fi
+
+  run mkdir -p "$screenshot_dir"
+  run defaults write com.apple.screencapture location "$screenshot_dir"
+  run killall SystemUIServer 2>/dev/null || true # apply now; harmless when the server is absent
+}
+
 install_screenshot_launch_agent() {
   local target_dir="$HOME/Library/LaunchAgents"
   local target_file="$target_dir/com.user.screenshots.organize.plist"
@@ -86,5 +101,6 @@ install_screenshot_launch_agent() {
 }
 
 install_screenshot_launch_agent
+configure_screenshot_location
 
 printf 'Configuration installation complete.\n'

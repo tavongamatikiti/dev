@@ -1,48 +1,38 @@
 #!/bin/bash
-# organize-screenshots.sh - moves screenshots from base dir into YYYY-MM subfolders
-# Base: ~/Pictures/Screenshots -> ~/Pictures/Screenshots/2026-08/
-# Uses file creation/modification date for correct month, not just "today"
+# Sort screenshots into ~/Pictures/Screenshots/YYYY-MM; Desktop is best-effort (macOS TCC blocks launchd).
 
 set -euo pipefail
+SRC="$HOME/Desktop"
 BASE="$HOME/Pictures/Screenshots"
 
-# safety: ensure base exists
 mkdir -p "$BASE"
 
-# find files directly in BASE (not in subfolders) - handle spaces
-find "$BASE" -maxdepth 1 -type f \( -iname "Screen Shot *.png" -o -iname "Screenshot *.png" -o -iname "Screen Recording *.mov" \) -print0 | while IFS= read -r -d '' f; do
-  # skip if file is still being written (modified within last 2 seconds)
-  if [[ $(find "$f" -mmin -0.05 2>/dev/null) ]]; then
-    # check age more precisely with stat
-    mod_epoch=$(stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null || echo 0)
-    now_epoch=$(date +%s)
-    age=$((now_epoch - mod_epoch))
-    if (( age < 2 )); then
-      continue
-    fi
-  fi
+# YYYY-MM of a file by creation date, falling back to modification date.
+file_month() { # $1 = file
+  local epoch
+  epoch=$(stat -f %B "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || date +%s)
+  [[ "$epoch" == "0" ]] && epoch=$(stat -f %m "$1" 2>/dev/null || date +%s)
+  date -r "$epoch" +%Y-%m 2>/dev/null || date +%Y-%m
+}
 
-  # get file's creation date (fallback to modification date)
-  # macOS stat: %B = creation time (Darwin), fallback to %m
-  file_epoch=$(stat -f %B "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null || date +%s)
-  # if creation time is 0 (not available), use modification time
-  if [[ "$file_epoch" == "0" ]]; then
-    file_epoch=$(stat -f %m "$f" 2>/dev/null || date +%s)
-  fi
-  month=$(date -r "$file_epoch" +%Y-%m 2>/dev/null || date -d "@$file_epoch" +%Y-%m 2>/dev/null || date +%Y-%m)
+organize_file() { # $1 = file
+  local month dest_dir base dest
+  month=$(file_month "$1")
   dest_dir="$BASE/$month"
   mkdir -p "$dest_dir"
+  base=$(basename "$1")
+  dest="$dest_dir/$base"
+  [[ -e "$dest" ]] && dest="$dest_dir/${base%.*}_$(date +%H%M%S).${base##*.}"
+  mv -n "$1" "$dest"
+  echo "$(date '+%Y-%m-%d %H:%M:%S') moved: $base -> $month/" >> "$BASE/.organize.log"
+}
 
-  # avoid overwriting: if dest exists, add suffix
-  base_name=$(basename "$f")
-  dest="$dest_dir/$base_name"
-  if [[ -e "$dest" ]]; then
-    # append timestamp
-    name_no_ext="${base_name%.*}"
-    ext="${base_name##*.}"
-    dest="$dest_dir/${name_no_ext}_$(date +%H%M%S).$ext"
-  fi
+scan_dir() { # $1 = dir; unreadable dirs are skipped so launchd never fails on ~/Desktop
+  [[ -d "$1" && -r "$1" && -x "$1" ]] || return 0
+  find "$1" -maxdepth 1 -type f \( -iname "Screen Shot *.png" -o -iname "Screenshot *.png" -o -iname "Screen Recording *.mov" \) -print0 2>/dev/null | while IFS= read -r -d '' f; do
+    organize_file "$f"
+  done || true
+}
 
-  mv -n "$f" "$dest" 2>/dev/null || mv "$f" "$dest"
-  echo "$(date '+%Y-%m-%d %H:%M:%S') moved: $base_name -> $month/" >> "$BASE/.organize.log"
-done
+scan_dir "$BASE"
+scan_dir "$SRC"

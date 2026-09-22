@@ -303,7 +303,7 @@ run_sdk() {
   return "$sdkman_status"
 }
 
-install_languages() {
+install_nvm_node() { # NVM, Node LTS, pnpm, tldr, and Bun
   if [[ ! -s "$HOME/.nvm/nvm.sh" ]]; then
     if [[ "$DRY_RUN" == "1" ]]; then
       printf '[dry-run] install NVM 0.40.6 without editing shell profiles\n'
@@ -316,32 +316,42 @@ install_languages() {
   fi
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] activate Node.js LTS, install pnpm and the tldr-pages client, refresh tldr pages, and install Bun\n'
-  else
-    load_nvm
-    run_nvm install --lts
-    run_nvm use --lts
-    if command_exists pnpm; then
-      printf 'pnpm already installed.\n'
-    else
-      npm install --global pnpm
-    fi
-    npm install --global tldr@latest
-    tldr --update
-    if [[ -x "$HOME/.bun/bin/bun" ]]; then
-      printf 'Bun already installed.\n'
-    else
-      curl -fsSL https://bun.sh/install | bash
-    fi
+    return
   fi
-  install_go
-  install_zig
+  load_nvm
+  run_nvm install --lts
+  run_nvm use --lts
+  if command_exists pnpm; then
+    printf 'pnpm already installed.\n'
+  else
+    npm install --global pnpm
+  fi
+  npm install --global tldr@latest
+  tldr --update
+  if [[ -x "$HOME/.bun/bin/bun" ]]; then
+    printf 'Bun already installed.\n'
+  else
+    curl -fsSL https://bun.sh/install | bash
+  fi
+}
+
+install_gopls_ubuntu() { # gopls through the pinned Go toolchain
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] install gopls using Go\n'
-  elif [[ ! -x "${XDG_CONFIG_HOME:-$HOME/.config}/go/bin/gopls" ]]; then
-    GOPATH="${GOPATH:-${XDG_CONFIG_HOME:-$HOME/.config}/go}" "$HOME/.local/opt/go1.26.1/bin/go" install golang.org/x/tools/gopls@latest
-  else
-    printf 'gopls already installed.\n'
+    return
   fi
+  if [[ -x "${XDG_CONFIG_HOME:-$HOME/.config}/go/bin/gopls" ]]; then
+    printf 'gopls already installed.\n'
+  else
+    GOPATH="${GOPATH:-${XDG_CONFIG_HOME:-$HOME/.config}/go}" "$HOME/.local/opt/go1.26.1/bin/go" install golang.org/x/tools/gopls@latest
+  fi
+}
+
+install_languages() {
+  install_nvm_node
+  install_go
+  install_zig
+  install_gopls_ubuntu
 }
 
 install_sdkman() {
@@ -389,6 +399,15 @@ has_subid_mapping() {
   [[ -r "$mapping_file" ]] && grep -q "^${user}:" "$mapping_file"
 }
 
+ensure_subid_entry() { # $1 = mapping file, $2 = usermod flag, $3 = user, $4 = range
+  has_subid_mapping "$1" "$3" && return 0
+  if [[ "$DRY_RUN" == "1" ]]; then
+    run sudo usermod "$2" "$4" "$3"
+  else
+    sudo usermod "$2" "$4" "$3"
+  fi
+}
+
 ensure_subid_mappings() {
   local user="$TARGET_USER" range_start range_end range
   if has_subid_mapping "$SUBUID_FILE" "$user" && has_subid_mapping "$SUBGID_FILE" "$user"; then
@@ -398,21 +417,8 @@ ensure_subid_mappings() {
   range_start="$(subid_range_start)"
   range_end=$((range_start + 65535))
   range="${range_start}-${range_end}"
-  if [[ "$DRY_RUN" == "1" ]]; then
-    if ! has_subid_mapping "$SUBUID_FILE" "$user"; then
-      run sudo usermod --add-subuids "$range" "$user"
-    fi
-    if ! has_subid_mapping "$SUBGID_FILE" "$user"; then
-      run sudo usermod --add-subgids "$range" "$user"
-    fi
-    return
-  fi
-  if ! has_subid_mapping "$SUBUID_FILE" "$user"; then
-    sudo usermod --add-subuids "$range" "$user"
-  fi
-  if ! has_subid_mapping "$SUBGID_FILE" "$user"; then
-    sudo usermod --add-subgids "$range" "$user"
-  fi
+  ensure_subid_entry "$SUBUID_FILE" --add-subuids "$user" "$range"
+  ensure_subid_entry "$SUBGID_FILE" --add-subgids "$user" "$range"
 }
 
 install_podman() {
@@ -443,8 +449,21 @@ install_configs() {
   "$SCRIPT_DIR/scripts/install-configs.sh" "${args[@]}"
 }
 
-verify_setup() {
+check_ubuntu_commands() { # $@ = commands; returns 1 when any is missing
   local command missing=0
+  for command in "$@"; do
+    if command_exists "$command"; then
+      printf 'verified command: %s\n' "$command"
+    else
+      printf 'missing command: %s\n' "$command" >&2
+      missing=1
+    fi
+  done
+  return "$missing"
+}
+
+verify_setup() {
+  local missing=0
   if [[ "$DRY_RUN" == "1" ]]; then
     printf '[dry-run] verify Ubuntu developer commands, Java 25, and rootless Podman\n'
     return
@@ -455,14 +474,7 @@ verify_setup() {
   export PATH="$HOME/.local/opt/go1.26.1/bin:$HOME/.local/opt/zig-0.15.2:$HOME/.local/bin:$GOPATH/bin:$BUN_INSTALL/bin:$PATH"
   [[ -s "$HOME/.nvm/nvm.sh" ]] && load_nvm
   [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && load_sdkman
-  for command in git tmux rg fzf nvim node bun pnpm java javac mvn gradle spring go gopls zig psql podman; do
-    if command_exists "$command"; then
-      printf 'verified command: %s\n' "$command"
-    else
-      printf 'missing command: %s\n' "$command" >&2
-      missing=1
-    fi
-  done
+  check_ubuntu_commands git tmux rg fzf nvim node bun pnpm java javac mvn gradle spring go gopls zig psql podman || missing=1
   java -version 2>&1 | grep -q '25\.' || { printf 'Java 25 is not active.\n' >&2; missing=1; }
   podman info --format '{{.Host.Security.Rootless}}' | grep -qx true || { printf 'Podman is not running rootless.\n' >&2; missing=1; }
   [[ "$missing" == "0" ]]

@@ -12,7 +12,7 @@ fail() {
   exit 1
 }
 
-mkdir -p "$TEST_BIN" "$TEST_HOME/.nvm" "$TEST_HOME/.sdkman" "$TEST_HOME/.ssh"
+mkdir -p "$TEST_BIN" "$TEST_HOME/.nvm" "$TEST_HOME/.ssh"
 printf 'private key\n' > "$TEST_HOME/.ssh/id_ed25519"
 printf 'public key\n' > "$TEST_HOME/.ssh/id_ed25519.pub"
 
@@ -70,12 +70,15 @@ bootstrap_output=$(TEST_BREW_MISSING=1 PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" 
 [[ "$bootstrap_output" == *'brew install gitleaks'* ]] || fail 'fresh-Mac setup should install explicitly requested Gitleaks'
 [[ "$bootstrap_output" == *'brew install cocoapods'* ]] || fail 'fresh-Mac setup should install CocoaPods through Homebrew'
 [[ "$bootstrap_output" == *'brew install bun'* ]] || fail 'fresh-Mac setup should install Bun'
-[[ "$bootstrap_output" == *'brew install --cask ngrok'* ]] || fail 'fresh-Mac setup should install ngrok as a cask'
+[[ "$bootstrap_output" == *'brew install cloudflared'* ]] || fail 'fresh-Mac setup should install cloudflared'
 [[ "$bootstrap_output" == *'brew install felixkratz/formulae/borders'* ]] || fail 'fresh-Mac setup should install AeroSpace borders'
 [[ "$bootstrap_output" == *'activate Node.js LTS and install pnpm'* ]] || fail 'fresh-Mac setup should activate pnpm'
 [[ "$bootstrap_output" == *'brew install postgresql@18'* ]] || fail 'fresh-Mac setup should install PostgreSQL 18'
 [[ "$bootstrap_output" == *'go install golang.org/x/tools/gopls@latest'* ]] || fail 'fresh-Mac setup should install gopls'
-[[ "$bootstrap_output" == *'sdk install springboot'* ]] || fail 'fresh-Mac setup should install Spring Boot'
+
+apps_output=$(TEST_BREW_MISSING=1 PATH="$TEST_BIN:$PATH" HOME="$TEST_HOME" XDG_CONFIG_HOME="$TEST_HOME/.config" \
+  "$PROJECT_DIR/setup.sh" --dry-run --only apps)
+[[ "$apps_output" == *'sudo credentials'* ]] || fail 'apps setup should request sudo upfront for privileged casks'
 [[ "$bootstrap_output" == *'install managed Zsh environment'* ]] || fail 'fresh-Mac setup should install the managed shell environment'
 [[ "$bootstrap_output" == *'brew install ddgr'* ]] || fail 'fresh-Mac setup should install ddgr'
 [[ "$bootstrap_output" == *'brew install gitleaks'* ]] || fail 'fresh-Mac setup should install gitleaks'
