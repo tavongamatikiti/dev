@@ -8,7 +8,7 @@
 ### macOS
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.9/install-mac.sh | bash -s -- --ref v1.0.9
+curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.10/install-mac.sh | bash -s -- --ref v1.0.10
 ```
 
 ### Ubuntu
@@ -16,7 +16,7 @@ curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.9/install-
 Run this as the normal `dev` account with `sudo` access, never as root:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.9/install-ubuntu.sh | bash -s -- --ref v1.0.9
+curl -fsSL https://raw.githubusercontent.com/tavongamatikiti/dev/v1.0.10/install-ubuntu.sh | bash -s -- --ref v1.0.10
 ```
 
 The bootstrap refuses to overwrite an existing `~/Developer/dev` folder.
